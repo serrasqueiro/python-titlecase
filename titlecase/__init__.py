@@ -23,7 +23,7 @@ else:
     REGEX_AVAILABLE = True
 
 __all__ = ['titlecase']
-__version__ = '2.3.0'
+__version__ = '2.4.1'
 
 SMALL = r'a|an|and|as|at|but|by|en|for|if|in|of|on|or|the|to|v\.?|via|vs\.?'
 PUNCT = r"""!"“#$%&'‘()*+,\-–‒—―./:;?@[\\\]_`{|}~"""
@@ -77,14 +77,18 @@ def set_small_word_list(small=SMALL):
     SUBPHRASE = regex.compile(r'([:.;?!][ ])(%s)' % small)
 
 
-def titlecase(text, callback=None, small_first_last=True):
+def titlecase(text, callback=None, small_first_last=True, preserve_blank_lines=False, normalise_space_characters=False):
     """
     :param text: Titlecases input text
     :param callback: Callback function that returns the titlecase version of a specific word
     :param small_first_last: Capitalize small words (e.g. 'A') at the beginning; disabled when recursing
+    :param preserve_blank_lines: Preserve blank lines in the output
+    :param normalise_space_characters: Convert all original spaces to normal space characters
     :type text: str
     :type callback: function
     :type small_first_last: bool
+    :type preserve_blank_lines: bool
+    :type normalise_space_characters: bool
 
     This filter changes all words to Title Caps, and attempts to be clever
     about *un*capitalizing SMALL words like a/an/the in the input.
@@ -93,11 +97,16 @@ def titlecase(text, callback=None, small_first_last=True):
     the New York Times Manual of Style, plus 'vs' and 'v'.
 
     """
-    lines = regex.split('[\r\n]+', text)
+    if preserve_blank_lines:
+        lines = regex.split('[\r\n]', text)
+    else:
+        lines = regex.split('[\r\n]+', text)
     processed = []
     for line in lines:
         all_caps = line.upper() == line
-        words = regex.split('[\t ]', line)
+        split_line = regex.split(r'(\s)', line)
+        words = split_line[::2]
+        spaces = split_line[1::2]
         tc_line = []
         for word in words:
             if callback:
@@ -164,7 +173,7 @@ def titlecase(text, callback=None, small_first_last=True):
             # too short (like "St", don't apply this)
             CONSONANTS = ''.join(set(string.ascii_lowercase)
                                  - {'a', 'e', 'i', 'o', 'u', 'y'})
-            is_all_consonants = regex.search('\A[' + CONSONANTS + ']+\Z', word,
+            is_all_consonants = regex.search(r'\A[' + CONSONANTS + r']+\Z', word,
                                              flags=regex.IGNORECASE)
             if is_all_consonants and len(word) > 2:
                 tc_line.append(word.upper())
@@ -185,7 +194,13 @@ def titlecase(text, callback=None, small_first_last=True):
                     lambda m: m.group(0).capitalize(), tc_line[-1]
                 )
 
-        result = " ".join(tc_line)
+        if normalise_space_characters:
+            result = " ".join(tc_line)
+        else:
+            line_to_be_joined = tc_line + spaces
+            line_to_be_joined[::2] = tc_line
+            line_to_be_joined[1::2] = spaces
+            result = "".join(line_to_be_joined)
 
         result = SUBPHRASE.sub(lambda m: '%s%s' % (
             m.group(1),
@@ -230,7 +245,7 @@ def cmd():
     # Consume '-f' and '-o' as input/output, allow '-' for stdin/stdout
     # and treat any subsequent arguments as a space separated string to
     # be titlecased (so it still works if people forget quotes)
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(allow_abbrev=False)
     in_group = parser.add_mutually_exclusive_group()
     in_group.add_argument('string', nargs='*', default=[],
             help='String to titlecase')
@@ -240,6 +255,8 @@ def cmd():
             help='File to write titlecased output to')
     parser.add_argument('-w', '--wordlist',
             help='Wordlist for acronyms')
+    parser.add_argument('--preserve-blank-lines', action='store_true',
+            help='Do not skip blank lines in input')
 
     args = parser.parse_args()
 
@@ -272,4 +289,5 @@ def cmd():
     wordlist_filter = create_wordlist_filter_from_file(wordlist_file)
 
     with ofile:
-        ofile.write(titlecase(in_string, callback=wordlist_filter))
+        ofile.write(titlecase(in_string, callback=wordlist_filter,
+            preserve_blank_lines=args.preserve_blank_lines))
