@@ -8,9 +8,9 @@ import sys
 import tempfile
 import unittest
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../'))
-from titlecase import titlecase, set_small_word_list, create_wordlist_filter_from_file
-
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+from titlecase.maincase import titlecase, set_small_word_list
+from titlecase.wordlists import create_wordlist_filter_from_file
 
 # (executed by `test_specific_string` below)
 TEST_DATA = (
@@ -316,7 +316,6 @@ TEST_DATA = (
 
 class TestStringSuite(unittest.TestCase):
     """Generated tests from strings"""
-
     def test_specific_string(self):
         for data in TEST_DATA:
             with self.subTest():
@@ -324,26 +323,28 @@ class TestStringSuite(unittest.TestCase):
 
 
 class TestInitialsRegex(unittest.TestCase):
+    """ Test 1. """
     def test_initials_regex(self):
         """Test - uppercase initials regex with A.B"""
-        from titlecase import UC_INITIALS
+        from expressions import UC_INITIALS
         #assert bool(UC_INITIALS.match('A.B')) is True
         self.assertRegex('A.B', UC_INITIALS)
 
     def test_initials_regex_2(self):
         """Test - uppercase initials regex with A.B."""
-        from titlecase import UC_INITIALS
+        from expressions import UC_INITIALS
         #assert bool(UC_INITIALS.match('A.B.')) is True
         self.assertRegex('A.B.', UC_INITIALS)
 
     def test_initials_regex_3(self):
         """Test - uppercase initials regex with ABCD"""
-        from titlecase import UC_INITIALS
+        from expressions import UC_INITIALS
         #assert bool(UC_INITIALS.match('ABCD')) is False
         self.assertNotRegex('ABCD', UC_INITIALS)
 
 
 class TestSymbols(unittest.TestCase):
+    """ Testing symbols static. """
     @staticmethod
     def at_n_t(word, **kwargs):
         if word.upper() == "AT&T":
@@ -354,6 +355,7 @@ class TestSymbols(unittest.TestCase):
 
 
 class TestCallback(unittest.TestCase):
+    """ Callback testing. """
     @staticmethod
     def abbreviation(word, **kwargs):
         if word.upper() in ('TCP', 'UDP'):
@@ -417,10 +419,10 @@ class TestCustomAbbreviations(unittest.TestCase):
 
 
 class TestBlankLines(unittest.TestCase):
-    # Really, it's a bit odd that the default behavior is to delete blank lines,
-    # but that's what it was from day one, so we're kind of stuck with that.
-    # This ensures folks can opt-out of that behavior if they want.
-
+    """ Really, it's a bit odd that the default behavior is to delete blank lines,
+    but that's what it was from day one, so we're kind of stuck with that.
+    This ensures folks can opt-out of that behavior if they want.
+    """
     def test_one_blank(self):
         s = 'Line number one\n\nand Line three\n'
         self.assertEqual(titlecase(s), 'Line Number One\nAnd Line Three\n')
@@ -434,6 +436,7 @@ class TestBlankLines(unittest.TestCase):
                 '\n\nLeading Blank\n\n\nMulti-Blank\n\n\n\n\nTrailing Blank\n\n')
 
 class TestNormaliseSpaceCharacters(unittest.TestCase):
+    """ Test spacing. """
     def test_tabs(self):
         s = 'text\twith\ttabs'
         self.assertEqual(titlecase(s), 'Text\tWith\tTabs')
@@ -444,5 +447,6 @@ class TestNormaliseSpaceCharacters(unittest.TestCase):
         self.assertEqual(titlecase(s), 'Text With Nonbreaking Spaces')
         self.assertEqual(titlecase(s, normalise_space_characters=True), 'Text With Nonbreaking Spaces')
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()
