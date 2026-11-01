@@ -6,3 +6,4 @@ Contributors
 * Stuart Colville
 * Pat Pannuto
 * Sam Brockie
+* Henrique Moreira

@@ -1,11 +1,10 @@
+# Python related
+__pycache__
+*.pyc
+
+# Basics
 .eggs
 .coverage
 .tox
-build
-dist
-temp
-titlecase.egg-info
-*.swp
-*.swo
-*.pyc
-*$py.class
+/build
+/titlecase.egg-info
