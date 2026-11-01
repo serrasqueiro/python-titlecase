@@ -3,14 +3,26 @@
 """ Word(s) lists
 """
 
+import argparse
+import sys
 import os
 import logging
 logger = logging.getLogger(__name__)
+try:
+    from .maincase import a_titlecase
+except ImportError:
+    from titlecase.maincase import a_titlecase
+
 
 ENCODING_IN = "UTF-8"
 
 
-def create_wordlist_filter_from_file(file_path):
+def main():
+    print("Running:", sys.argv[1:])
+    cmd()
+
+
+def create_wordlist_filter_from_file(file_path, requested=False):
     """ Load a list of abbreviations from the file with the provided path,
     reading one abbreviation from each line, and return a callback to
     be passed to the `titlecase` function for preserving their given
@@ -21,7 +33,8 @@ def create_wordlist_filter_from_file(file_path):
         return lambda word, **kwargs: None
     file_path_str = str(file_path)
     if not os.path.isfile(file_path_str):
-        logger.debug('No abbreviations file found at: %s', file_path_str)
+        if requested:
+            logger.error('No abbreviations file found at: %s', file_path_str)
         return lambda word, **kwargs: None
     with open(file_path_str, encoding=ENCODING_IN) as fd_in:
         logger.debug('Reading abbreviations from file: %s', file_path_str)
@@ -49,18 +62,43 @@ def cmd():
     """
     parser = argparse.ArgumentParser(allow_abbrev=False)
     in_group = parser.add_mutually_exclusive_group()
-    in_group.add_argument('string', nargs='*', default=[],
-            help='String to titlecase')
-    in_group.add_argument('-f', '--input-file',
-            help='File to read from to titlecase')
-    parser.add_argument('-o', '--output-file',
-            help='File to write titlecased output to')
-    parser.add_argument('-w', '--wordlist',
-            help='Wordlist for acronyms')
-    parser.add_argument('--preserve-blank-lines', action='store_true',
-            help='Do not skip blank lines in input')
-
+    in_group.add_argument(
+        'string', nargs='*', default=[],
+        help='String to titlecase',
+    )
+    in_group.add_argument(
+        '-f', '--input-file',
+        help='File to read from to titlecase',
+    )
+    parser.add_argument(
+        '-o', '--output-file',
+        help='File to write titlecased output to',
+    )
+    parser.add_argument(
+        '-w', '--wordlist',
+        help='Wordlist for acronyms',
+    )
+    parser.add_argument(
+        '--preserve-blank-lines', action='store_true',
+        help='Do not skip blank lines in input',
+    )
+    parser.add_argument(
+        '-v', '--verbose',
+        action='count',
+        default=0,
+        help='Increase verbosity',
+    )
     args = parser.parse_args()
+    if args.verbose >= 4:
+        level = logging.DEBUG
+    elif args.verbose >= 1:
+        level = logging.INFO
+    else:
+        level = logging.WARNING
+    logging.basicConfig(
+        level=level,
+        format='%(levelname)s:%(name)s:%(message)s',
+    )
 
     if args.input_file is not None:
         if args.input_file == '-':
@@ -69,27 +107,31 @@ def cmd():
             ifile = open(args.input_file, encoding="UTF-8")
     else:
         ifile = sys.stdin
-
     if args.output_file is not None:
         if args.output_file == '-':
             ofile = sys.stdout
         else:
-            ofile = open(args.output_file, 'w')
+            ofile = open(args.output_file, 'w', encoding="UTF-8")
     else:
         ofile = sys.stdout
-
     if len(args.string) > 0:
         in_string = ' '.join(args.string)
     else:
         with ifile:
             in_string = ifile.read()
 
-    if args.wordlist is not None:
-        wordlist_file = args.wordlist
-    else:
+    requested = False
+    if args.wordlist is None:
         wordlist_file = os.path.join(os.path.expanduser('~'), '.titlecase.txt')
-    wordlist_filter = create_wordlist_filter_from_file(wordlist_file)
+    else:
+        wordlist_file = args.wordlist
+        requested = True
+    wordlist_filter = create_wordlist_filter_from_file(wordlist_file, requested)
 
     with ofile:
-        ofile.write(maincase(in_string, callback=wordlist_filter,
+        ofile.write(a_titlecase(in_string, callback=wordlist_filter,
             preserve_blank_lines=args.preserve_blank_lines))
+
+
+if __name__ == "__main__":
+    main()

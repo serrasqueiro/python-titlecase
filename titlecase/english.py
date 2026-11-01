@@ -3,6 +3,8 @@
 This is part of titlecase package.
 """
 
+# pylint: disable=missing-function-docstring
+
 from .maincase import a_titlecase
 from .dictionaries.words import ENGLISH_US_WORDS
 

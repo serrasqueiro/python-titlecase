@@ -6,13 +6,9 @@ Python version by Stuart Colville http://muffinresearch.co.uk
 License: http://www.opensource.org/licenses/mit-license.php
 """
 
-import argparse
-import os
-import string
-import sys
-
 from .maincase import titlecase
 from .english import EnglishStatic, EnglishTitleCase
+from .wordlists import cmd
 
 __version__ = '3.4.2'
 
@@ -20,4 +16,5 @@ __all__ = [
     "titlecase",
     "EnglishTitleCase",
     "EnglishStatic",
+    "cmd",
 ]
